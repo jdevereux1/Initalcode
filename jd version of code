@@ -1,0 +1,162 @@
+##Code to parse first 100 compounds from Reaxys
+
+# importing element tree under the alias of ET
+import xml.etree.ElementTree as ET
+import pandas as pd
+import numpy as np 
+
+# passing the path of the xml document to enable the parsing process
+tree = ET.parse('/Users/Jessica/Desktop/Research Project/1-100SUBSTANCES.xml')
+
+# getting the parent tag of the xml document
+root = tree.getroot()
+
+# arrays to store the collected data
+numbering = []
+inchikeys = []
+potentials = []
+solvents = []
+citations_array = []
+reference_electrodes = []
+voltammetrys = []
+descriptions = []
+temperatures = []
+unknown1s = []
+unknown2s = []
+PHs = []
+acid_base_behaviours = []
+chemical_names = []
+
+def FindCitations(citations):
+    citations_list = []
+    for item1 in citations:
+        journal = ''
+        year = ''
+        volume = ''
+        page = ''
+        doi = ''
+        for item2 in item1:
+            if item2.tag == 'CIT':
+                for item3 in item2:
+                    #article_check = True
+                    #if item3.text != 'Article':
+                    #    article_check = False
+                    if item3.tag == 'CIT01':
+                        for item4 in item3:
+                            if item4.tag == 'CIT.JT':
+                                journal = item4.text
+                            if item4.tag == 'CIT.VL':
+                                volume = item4.text
+                            if item4.tag == 'CIT.PY':
+                                year = item4.text
+                            if item4.tag == 'CIT.PAG':
+                                page = item4.text
+                            if item4.tag == 'CIT.DOI':
+                                doi = item4.text
+                    #if article_check == False:
+                    #    citation_text = 'Not article'
+                    #else:
+                    citation_text = journal + ',' + year + ',' + volume + ',' + page + '(' + doi + ')'
+                citations_list.append(citation_text)
+    return citations_list
+
+# change this number according to the input xml file
+count = 1
+
+for substance in root.iter('substance'):
+    numbering.append(count)
+    inchikey = ''
+    potential = []
+    chemical_name = []
+    citation = []
+    reference_electrode = []
+    description = []
+    temperature = []
+    solvent = []
+    voltammetry = []
+    unknown1 = []
+    unknown2 = []
+    PH = []
+    acid_base_behaviour = []
+    
+    for aspect1 in substance:
+        if aspect1.tag == 'IDE':
+            for element in aspect1:
+                if element.tag == 'IDE.INCHI': 
+                    inchikey = element.text
+                    inchikeys.append(inchikey)
+                if element.tag == 'IDE.CN': 
+                    chemical_name.append(element.text)
+                        
+        if aspect1.tag == 'ELCH':
+            for aspect2 in aspect1:
+                if aspect2.tag == 'ELCH.POT':
+                    potential.append(aspect2.text)
+                if aspect2.tag == 'citations':
+                    journal_text = FindCitations(aspect2)
+                    citation.append(journal_text)
+                if aspect2.tag == 'ELCH.DESCR':
+                    description.append(aspect2.text)
+                if aspect2.tag == 'ELCH.COM':
+                    temperature.append(aspect2.text) 
+                if aspect2.tag == 'ELCH.KW':
+                    unknown1.append(aspect2.text)
+                    
+        if aspect1.tag == 'POT':
+            for aspect2 in aspect1:
+                if aspect2.tag == 'POT.SOL':
+                    solvent.append(aspect2.text)
+                if aspect2.tag == 'POT.COM':
+                    reference_electrode.append(aspect2.text)
+                if aspect2.tag == 'POT.KW':
+                    voltammetry.append(aspect2.text)
+                if aspect2.tag == 'POT.T':
+                    unknown2.append(aspect2.text)
+                if aspect2.tag == 'POT.PH':
+                    PH.append(aspect2.text)
+        
+                    
+        if aspect1.tag == 'ELCB':
+            for aspect2 in aspect1:
+                if aspect2.tag == 'ELCB.KW':
+                    acid_base_behaviour.append(aspect2.text)
+                    
+    citations_array.append(citation)
+    potentials.append(potential)
+    descriptions.append(description)
+    temperatures.append(temperature)
+    solvents.append(solvent)
+    reference_electrodes.append(reference_electrode)
+    voltammetrys.append(voltammetry)
+    unknown1s.append(unknown1)
+    unknown2s.append(unknown2)
+    acid_base_behaviours.append(acid_base_behaviour)
+    chemical_names.append(chemical_name)
+    PHs.append(PH)
+    
+    count = count + 1
+
+# create the dataframe to store captured data
+# save it as a csv file
+data = {'Number':numbering}
+# , 'InchiKey':inchikeys, 'Potentials':potentials, 'Solvent':solvents, Citations':citations_array}
+df = pd.DataFrame(data)
+df['InchiKey'] = pd.Series(inchikeys)
+df['Chemical Name'] = pd.Series(chemical_names)
+df['Potentials'] = pd.Series(potentials)
+df['Solvent'] = pd.Series(solvents)
+df['Reference electrode'] = pd.Series(reference_electrodes)
+df['Voltammetry'] = pd.Series(voltammetrys)
+df['Description']=pd.Series(descriptions)
+df['Temperature']=pd.Series(temperatures)
+df['Unknown 1']=pd.Series(unknown1s)
+df['Unknown 2']=pd.Series(unknown2s)
+df['PH']=pd.Series(PHs)
+df['Acid Base Behaviour']=pd.Series(acid_base_behaviours)
+df['Citations'] = pd.Series(citations_array)
+df
+
+df.to_csv('/Users/Jessica/Desktop/Research Project/1-100SUBSTANCEStest.csv', index=False)
+
+
+
