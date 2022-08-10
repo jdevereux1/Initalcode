@@ -1,0 +1,244 @@
+# import the relevent python modules first 
+import pandas as pd
+from lxml import etree
+import csv
+def xml_parse(xmlfile, outfile):
+
+#Reaxys XML parsing
+#Run the code box below to initialise the xml parse function (shift+enter).
+#enter filepaths for the input XML file and output CSV file in the code box at the bottom.
+#Press shift + enter on the bottom box after entering file paths.
+#Produces a CSV file into the outfile directory which can be viewed in excel.
+        
+    # Column titles for outfile
+    Titles = ['Reaction ID',
+              'Reaction Number', 
+              'Reactants',
+              'Products',
+              'Reagents',
+              'Solvents',
+              'Catalysts',
+              'Times',
+              'Temperatures',
+              'Yield (numerical)',
+              'Yield (text)',
+              'Max Reported Yield',
+              'Optical Yield',
+              'Reaction Steps',
+              'Publication Year',
+              'Journal Title',
+              'Document Type']
+
+    
+    # Write column titles to outfile
+    with open(outfile, 'w+', newline='', encoding="utf8", errors='ignore') as f:
+        writer = csv.writer(f)
+        writer.writerow(Titles)
+
+    # Remove any bold, italic, subscript, superscript, highlights from xml file
+    with open(xmlfile) as f:
+        xml_str = f.read()
+
+    xml_str = xml_str.replace('<hi>', '')
+    xml_str = xml_str.replace('</hi>', '')
+    xml_str = xml_str.replace('<sub>', '')
+    xml_str = xml_str.replace('</sub>', '')
+    xml_str = xml_str.replace('<SUB>', '')
+    xml_str = xml_str.replace('</SUB>', '')
+    xml_str = xml_str.replace('<sup>', '')
+    xml_str = xml_str.replace('</sup>', '')
+    xml_str = xml_str.replace('<SUP>', '')
+    xml_str = xml_str.replace('</SUP>', '')
+    xml_str = xml_str.replace('<i>', '')
+    xml_str = xml_str.replace('</i>', '')
+    xml_str = xml_str.replace('<br/>', '')
+
+    with open(xmlfile, 'w') as f:
+        f.write(xml_str)
+              
+    # Assign lists for row entries
+    reaction_ID = []
+    reaction = 0
+    reactants = []
+    products = []
+    max_yield = []
+    reagents = []
+    solvents = []
+    catalysts = []
+    times = []
+    temperatures = []
+    numerical_yield = []
+    text_yield = []
+    optical_yield =[]
+    
+        
+    # Parse master XML file
+    for event, element in etree.iterparse(xmlfile, events=("start", "end")):
+        
+        # Reaction index
+        if element.tag == "reaction" and event == "start":
+            reaction += 1
+        
+        # Reaction ID from Reaxys
+        elif element.tag == 'RX.ID' and event == "start":
+            reaction_ID.append(str(element.text))
+        
+        # Reactants
+        elif element.tag == "RX.RCT" and event == "start":
+            reactants.append(element.text)
+            
+         # Products
+        elif element.tag == "RX.PRO" and event == "start":
+            products.append(element.text)
+        
+        # Max Yield
+        elif element.tag == "RX.MYD" and event == "start":
+            max_yield.append(element.text)
+            
+        # Reagents
+        elif element.tag == "RXD.RGT" and event == "start":
+            reagents.append(element.text)
+        
+        # Solvents
+        elif element.tag == "RXD.SOL" and event == "start":
+            solvents.append(element.text)
+        
+        # Catalysts
+        elif element.tag == "RXD.CAT" and event == "start":
+            catalysts.append(element.text)
+            
+        # Reaction time
+        elif element.tag == "RXD.TIM" and event == "start":
+            times.append(element.text)
+            
+        # Temperature
+        elif element.tag == "RXD.T" and event == "start":
+            temperatures.append(element.text)
+            
+        # Numerical Yield
+        elif element.tag == "RXD.NYD" and event == "start":
+            numerical_yield.append(element.text)
+
+        # Text Yield
+        elif element.tag == "RXD.YD" and event == "start":
+            text_yield.append(element.text)
+            
+        # Optical Yield
+        elif element.tag == "RXD.OYD" and event == "start":
+            optical_yield.append(element.text)
+            
+        # Number of steps
+        elif element.tag == "RXD.STP" and event == "start":
+            steps = element.text
+        
+        # Publication year
+        elif element.tag == "CIT.PY" and event == "start":
+            year = element.text
+        
+        # Journal title
+        elif element.tag == "CIT.JT" and event == "start":
+            jt = element.text
+            
+        # Document Type
+        elif element.tag == "CIT.DT" and event == "start":
+            dt = element.text
+            
+        # End of <RXD> entry write to file
+        elif element.tag == "RXD" and event == "end":
+
+
+                
+            # Convert all lists to strings with , separator
+            ID = ", ".join([str(x) for x in reaction_ID])
+            rcts = ", ".join([str(x) for x in reactants])
+            prds = ", ".join([str(x) for x in products])
+            rgts = ", ".join([str(x) for x in reagents])
+            solvs = ", ".join([str(x) for x in solvents])
+            cats = ", ".join([str(x) for x in catalysts])
+            t = ", ".join([str(x) for x in times])
+            T = ", ".join([str(x) for x in temperatures])
+            nyd = ", ".join([str(x) for x in numerical_yield])
+            tyd = ", ".join([str(x) for x in text_yield])
+            myd = ", ".join([str(x) for x in max_yield])
+            oyd = ", ".join([str(x) for x in optical_yield])
+            
+            # Write variables to list
+            data = [ID,
+                    reaction,
+                    rcts,
+                    prds,
+                    rgts,
+                    solvs,
+                    cats,
+                    t,
+                    T,
+                    nyd,
+                    tyd,
+                    myd,
+                    oyd,
+                    steps,
+                    year,
+                    jt,
+                    dt]
+            
+            # If no value assign blank
+            data = ['None' if i == '' else i for i in data]  
+            
+                
+            # Write data to file
+            with open(outfile, 'a+', encoding='utf-8', newline='') as f:
+                writer = csv.writer(f, delimiter=',')
+                writer.writerow(data)
+                
+            # Clear all variables and lists in <RXD>
+            ID = ""
+            reagents.clear()
+            rgts = ""
+            solvents.clear()
+            solvs = ""
+            catalysts.clear()
+            cats = ""
+            times.clear()
+            t = ""
+            temperatures.clear()
+            T = ""
+            numerical_yield.clear()
+            nyd = ""
+            text_yield.clear()
+            tyd = ""
+            optical_yield.clear()
+            oyd = ""
+            steps = None
+            year = None
+            jt = None
+            dt = None
+        # At end of reaction clear anything with RX tag
+        elif element.tag == "reaction" and event == "end":
+            reaction_ID.clear()
+            reactants.clear()
+            products.clear()
+            rcts = ""
+            prds = ""
+            max_yield.clear()
+            myd = ""
+
+
+    # Correct/Remove characters in output file
+    with open(outfile, errors='ignore') as f:
+        csv_str = f.read()
+
+    csv_str = csv_str.replace('(l)', '(I)')
+    csv_str = csv_str.replace('`', "'")
+    csv_str = csv_str.replace('[]', "None")
+    csv_str = csv_str.replace(';', "")
+    csv_str = csv_str.replace(' - ', " -- ") # this is for the reaction time column
+
+    with open(outfile, 'w') as f:
+        f.write(csv_str)
+        
+    # assign file names and run xml_parse
+    #enter in file location
+xmlfile = 
+outfile = 
+
+xml_parse(xmlfile, outfile)
